@@ -14,6 +14,6 @@ In order to run the program, the following invocation can be used:
 	make
 	./main input
 
-To successfully run the abovde, you'll additionally need autotools, make, and 
+To successfully run the above, you'll additionally need autotools, make, and 
 a C compiler on your system.
 
