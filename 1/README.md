@@ -1,5 +1,4 @@
 # Advent of Code Day 1 - Calorie Counting
-=========================================
 
 This folder contains the attempted solution to the first of the 2022 Advent of Code 
 challenges. For this, we want to take a text file containing groupings of calorie 
