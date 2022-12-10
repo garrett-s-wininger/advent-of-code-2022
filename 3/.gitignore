@@ -1,0 +1,4 @@
+# Dotnet build directories
+bin/
+obj/
+
