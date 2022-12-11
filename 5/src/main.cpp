@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     stream >> destination_stack;
 
     for (unsigned int i = 0; i < movement_count; ++i) {
-      char item = container_stacks[source_stack - 1].front();
+      const char item = container_stacks[source_stack - 1].front();
 
       container_stacks[source_stack - 1].pop_front();
       container_stacks[destination_stack - 1].push_front(item);
