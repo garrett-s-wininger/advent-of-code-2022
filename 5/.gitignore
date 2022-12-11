@@ -1,0 +1,21 @@
+# Vim
+**/*.swp
+
+# Autotools
+aclocal.m4
+autom4te.cache/
+config.log
+config.status
+configure
+COPYING
+depcomp
+INSTALL
+install-sh
+main
+Makefile
+Makefile.in
+missing
+src/.deps/
+src/.dirstamp
+src/*.o
+
