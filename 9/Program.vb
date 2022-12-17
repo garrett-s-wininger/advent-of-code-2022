@@ -15,7 +15,7 @@ Module Program
         If args.Length() <> 1
             Console.Error.WriteLine("Usage: dotnet run <filename>")
             Environment.Exit(1)
-	End If
+        End If
 
         Dim headLastPosition As (Integer, Integer) = (0, 0)
         Dim headPosition As (Integer, Integer) = (0, 0)
