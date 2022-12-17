@@ -1,0 +1,6 @@
+# Haskell outputs
+*.hi
+*.o
+
+# Output binary
+main
