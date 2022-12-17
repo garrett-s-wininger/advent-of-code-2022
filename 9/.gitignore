@@ -1,0 +1,7 @@
+# Vim files
+*.swp
+
+# Dotnet Build Files/Directories
+bin/
+obj/
+
