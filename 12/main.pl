@@ -61,9 +61,9 @@ while ( scalar @queue > 0 ) {
     my $left_idx  = $idx - 1;
     my $right_idx = $idx + 1;
 
-    foreach ( $up_idx, $down_idx, $left_idx, $right_idx ) {
+    foreach ( $up_idx, $down_idx, $right_idx ) {
         if ( in_bounds( \@content, $_ ) && !exists $visited{$_} ) {
-            if ( ( $_ == $left_idx || $_ == $right_idx )
+            if ( ( $_ == $right_idx )
                 && !same_grid_line( $width, $idx, $_ ) )
             {
                 next;
@@ -71,13 +71,30 @@ while ( scalar @queue > 0 ) {
 
             $parents{$_} = $idx;
 
-            if ( $_ == $dest_idx && can_move( \@content, $idx, $_) ) {
+            if ( $_ == $dest_idx && can_move( \@content, $idx, $_ ) ) {
                 $parents{$dest_idx} = $idx;
                 last;
             }
             elsif ( scalar %visited == 1 || can_move( \@content, $idx, $_ ) ) {
                 push @queue, $_;
             }
+        }
+    }
+
+    if (   in_bounds( \@content, $left_idx )
+        && same_grid_line( $width, $idx, $left_idx )
+        && !exists $visited{$left_idx} )
+    {
+        $parents{$left_idx} = $idx;
+
+        if ( $left_idx == $dest_idx && can_move( \@content, $idx, $left_idx ) )
+        {
+            $parents{$dest_idx} = $idx;
+            last;
+        }
+        elsif ( scalar %visited == 1 || can_move( \@content, $idx, $left_idx ) )
+        {
+            push @queue, $left_idx;
         }
     }
 }
