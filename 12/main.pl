@@ -71,7 +71,7 @@ while ( scalar @queue > 0 ) {
 
             $parents{$_} = $idx;
 
-            if ( $content[$idx] >= 121 && $_ == $dest_idx ) {
+            if ( $_ == $dest_idx && can_move( \@content, $idx, $_) ) {
                 $parents{$dest_idx} = $idx;
                 last;
             }
