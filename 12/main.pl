@@ -4,107 +4,128 @@ use strict;
 use warnings;
 use v5.30.0;
 
-use List::Util qw(first);
+sub sub_special_values {
+    my $value             = shift;
+    my $start             = 83;
+    my $end               = 69;
+    my $start_replacement = 96;
+    my $end_replacement   = 123;
+
+    if ( $value == $end ) {
+        $value = $end_replacement;
+    }
+    elsif ( $value == $start ) {
+        $value = $start_replacement;
+    }
+
+    return $value;
+}
+
+sub can_move {
+    my ( $source, $destination ) = @_;
+
+    if ( $source eq "\n" || $destination eq "\n" ) {
+        return 0;
+    }
+
+    my $source_ord      = sub_special_values( ord $source );
+    my $destination_ord = sub_special_values( ord $destination );
+
+    return $destination_ord <= $source_ord + 1;
+}
+
+sub filesize {
+    my $handle = shift;
+
+    my $start = tell $handle;
+    seek $handle, 0, 2;
+    my $total = tell $handle;
+    seek $handle, $start, 0;
+
+    return $total;
+}
+
+sub first_char_offset {
+    my $handle  = shift;
+    my $desired = shift;
+    my $offset  = -1;
+    my $char    = "";
+
+    my $start = tell $handle;
+
+    while ( $offset == -1 && !eof $handle ) {
+        read $handle, $char, 1;
+
+        if ( $char eq $desired ) {
+            $offset = ( tell $handle ) - 1;
+        }
+    }
+
+    seek $handle, $start, 0;
+    return $offset;
+}
 
 if ( !( $#ARGV + 1 ) ) {
     say STDERR "Usage: ./main.pl <filepath>";
     exit 1;
 }
 
-chomp( my @lines = <> );
-my @content   = unpack "W*", join( "", @lines );
-my $start_idx = first { $content[$_] eq 83 } 0 .. $#content;
-my $dest_idx  = first { $content[$_] eq 69 } 0 .. $#content;
-my $width     = length $lines[0];
+open my $fh, "<", $ARGV[0] or die "Could not open file at provided path";
 
-my @queue   = ($start_idx);
+my $grid_size       = filesize($fh);
+my $grid_width      = first_char_offset( $fh, "\n" );
+my $starting_offset = first_char_offset( $fh, "S" );
+my $ending_offset   = first_char_offset( $fh, "E" );
+
+my @queue   = ($starting_offset);
 my %visited = ();
 my %parents = ();
 
-sub can_move {
-    my $array_ref   = shift;
-    my $source      = shift;
-    my $destination = ${$array_ref}[shift];
-
-    if ( $destination == 69 ) {
-        $destination = 122;
-    }
-
-    return $destination <= ${$array_ref}[$source] + 1;
-}
-
-sub in_bounds {
-    my $array_ref = shift;
-    my $idx       = shift;
-
-    return $idx > 0 && $idx < scalar @{$array_ref};
-}
-
-sub same_grid_line {
-    my $width       = shift;
-    my $source      = shift;
-    my $destination = shift;
-
-    return ( int $source / $width ) == ( int $destination / $width );
-}
-
 while ( scalar @queue > 0 ) {
-    my $idx = shift @queue;
+    my $offset = shift @queue;
 
-    if ( exists $visited{$idx} ) {
+    if ( exists $visited{$offset} ) {
         next;
     }
 
-    $visited{$idx} = 1;
-    my $up_idx    = $idx - $width;
-    my $down_idx  = $idx + $width;
-    my $left_idx  = $idx - 1;
-    my $right_idx = $idx + 1;
+    $visited{$offset} = 1;
+    seek $fh, $offset, 0;
+    read $fh, my $char, 1;
 
-    foreach ( $up_idx, $down_idx, $right_idx ) {
-        if ( in_bounds( \@content, $_ ) && !exists $visited{$_} ) {
-            if ( ( $_ == $right_idx )
-                && !same_grid_line( $width, $idx, $_ ) )
-            {
-                next;
-            }
+    my $up_idx    = $offset - $grid_width - 1;
+    my $down_idx  = $offset + $grid_width + 1;
+    my $left_idx  = $offset - 1;
+    my $right_idx = $offset + 1;
 
-            $parents{$_} = $idx;
+    foreach ( $up_idx, $down_idx, $left_idx, $right_idx ) {
+        if (   $_ >= 0
+            && $_ <= $grid_size
+            && ( ( $_ + 1 ) % ( $grid_width + 1 ) ) != 0 )
+        {
+            seek $fh, $_, 0;
+            read $fh, my $check_char, 1;
 
-            if ( $_ == $dest_idx && can_move( \@content, $idx, $_ ) ) {
-                $parents{$dest_idx} = $idx;
-                last;
-            }
-            elsif ( scalar %visited == 1 || can_move( \@content, $idx, $_ ) ) {
+            if ( can_move( $char, $check_char ) && !exists $visited{$_} ) {
+                $parents{$_} = $offset;
+
+                if ( $_ == $ending_offset ) {
+                    last;
+                }
+
                 push @queue, $_;
             }
-        }
-    }
-
-    if (   in_bounds( \@content, $left_idx )
-        && same_grid_line( $width, $idx, $left_idx )
-        && !exists $visited{$left_idx} )
-    {
-        $parents{$left_idx} = $idx;
-
-        if ( $left_idx == $dest_idx && can_move( \@content, $idx, $left_idx ) )
-        {
-            $parents{$dest_idx} = $idx;
-            last;
-        }
-        elsif ( scalar %visited == 1 || can_move( \@content, $idx, $left_idx ) )
-        {
-            push @queue, $left_idx;
         }
     }
 }
 
 my $move_count = 0;
-my $path_idx   = $dest_idx;
+my $idx        = $ending_offset;
 
-while ( exists ${ parents { $path_idx } } ) {
+while ( exists $parents{$idx} ) {
+    $idx = $parents{$idx};
     ++$move_count;
-    $path_idx = ${ parents { $path_idx } };
 }
 
-print "Reached destination after $move_count moves\n";
+say "Shortest path count: $move_count steps";
+
+close $fh;
