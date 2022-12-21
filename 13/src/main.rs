@@ -10,8 +10,6 @@ enum SignalToken {
     Integer(i32),
 }
 
-// TODO: Remove when parsing is implemented
-#[allow(dead_code)]
 #[derive(Debug)]
 enum Packet {
      Component(i32),
@@ -45,13 +43,60 @@ fn lex_string(line: String) -> Vec<SignalToken> {
     tokens
 }
 
-fn parse_tokens(_tokens: Vec<SignalToken>) -> Packet {
-    // TODO: Eval tokens to form proper value
-    Packet::Component(1)
+fn parse_tokens(tokens: &[SignalToken]) -> Packet {
+    let mut result = Vec::<Box<Packet>>::new();
+    let mut idx = 0;
+
+    loop {
+        if idx >= tokens.len() {
+            break;
+        }
+
+        match tokens[idx] {
+            SignalToken::Integer(x) => {
+                result.push(Box::<Packet>::new(Packet::Component(x)));
+                idx += 1;
+            },
+            SignalToken::ListStart => {
+                let mut list_stack = Vec::<SignalToken>::new();
+                list_stack.push(SignalToken::ListStart);
+
+                for i in idx + 1..tokens.len() {
+                    match tokens[i] {
+                        SignalToken::ListStart => {
+                            list_stack.push(SignalToken::ListStart);
+                        },
+                        SignalToken::ListEnd => {
+                            list_stack.pop();
+
+                            if list_stack.is_empty() {
+                                result.push(
+                                    Box::<Packet>::new(parse_tokens(&tokens[idx + 1..i]))
+                                );
+
+                                idx += i - idx + 1;
+                                break;
+                            }
+                        }
+                        _ => continue,
+                    }
+                }
+            },
+            _ => idx += 1,
+        }
+    }
+
+    Packet::ComponentList(result)
 }
 
-fn packets_in_order(_first: &Packet, _second: &Packet) -> bool {
-    // TODO: Perform comparison between the provided data representations
+fn packets_in_order(first: &Packet, second: &Packet) -> bool {
+    match (first, second) {
+        (Packet::ComponentList(_x), Packet::ComponentList(_y)) => (
+            // TODO: Perform comparison on interior vec members
+        ),
+        _ => (),
+    }
+
     true
 }
 
@@ -77,11 +122,19 @@ fn main() {
             pair_idx += 1;
 
             if packets_in_order(&pair[0], &pair[1]) {
+                println!("Ordered!");
                 proper_pairs.push(pair_idx);
+            } else {
+                println!("Unordered!");
+            }
+
+            // TODO: Remove once comparison is complete
+            if pair_idx == 1 {
+                break;
             }
         } else {
             let tokens = lex_string(line_for_parsing);
-            let packet = parse_tokens(tokens);
+            let packet = parse_tokens(&tokens[1..tokens.len() - 1]);
             
             if (index + 1) % 3 == 2 {
                 pair[1] = packet;
@@ -90,6 +143,13 @@ fn main() {
             }
         }
     }
+
+    // TODO: Uncomment when comparison is complete
+    // pair_idx += 1;
+
+    // if packets_in_order(&pair[0], &pair[1]) {
+    //     proper_pairs.push(pair_idx);
+    // }
 
     println!("Total of ordered pair indicies: {}", proper_pairs.iter().sum::<u32>());
 }
