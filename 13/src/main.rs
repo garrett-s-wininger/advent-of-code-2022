@@ -1,3 +1,4 @@
+use std::cmp;
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
@@ -47,11 +48,7 @@ fn parse_tokens(tokens: &[SignalToken]) -> Packet {
     let mut result = Vec::<Box<Packet>>::new();
     let mut idx = 0;
 
-    loop {
-        if idx >= tokens.len() {
-            break;
-        }
-
+    while idx < tokens.len() {
         match tokens[idx] {
             SignalToken::Integer(x) => {
                 result.push(Box::<Packet>::new(Packet::Component(x)));
@@ -78,7 +75,7 @@ fn parse_tokens(tokens: &[SignalToken]) -> Packet {
                                 break;
                             }
                         }
-                        _ => continue,
+                        _ => (),
                     }
                 }
             },
@@ -89,15 +86,52 @@ fn parse_tokens(tokens: &[SignalToken]) -> Packet {
     Packet::ComponentList(result)
 }
 
+fn components_match(first: &Packet, second: &Packet) -> bool {
+    match (first, second) {
+        (Packet::Component(x), Packet::Component(y)) => x == y,
+        _ => false
+    }
+}
+
 fn packets_in_order(first: &Packet, second: &Packet) -> bool {
     match (first, second) {
-        (Packet::ComponentList(_x), Packet::ComponentList(_y)) => (
-            // TODO: Perform comparison on interior vec members
-        ),
-        _ => (),
-    }
+        (Packet::ComponentList(x), Packet::ComponentList(y)) => {
+            let x_len = x.len();
+            let y_len = y.len();
+            let smallest_len = cmp::min(x_len, y_len);
+            let mut idx = 0;
 
-    true
+            while idx < smallest_len {
+                let x_value = &x[idx];
+                let y_value = &y[idx];
+
+                if !packets_in_order(x_value, y_value) {
+                    return false;
+                } else {
+                    if !components_match(x_value, y_value) {
+                        return true;
+                    }
+                }
+
+                idx += 1;
+            }
+
+            if (x_len != y_len) && idx == y_len {
+                return false;
+            }
+
+            true
+        },
+        (Packet::Component(x), Packet::Component(y)) => {
+            x <= y
+        },
+        (Packet::Component(x), Packet::ComponentList(_)) => {
+            packets_in_order(&Packet::ComponentList(vec![Box::<Packet>::new(Packet::Component(*x))]), second)
+        },
+        (Packet::ComponentList(_), Packet::Component(x)) => {
+            packets_in_order(first, &Packet::ComponentList(vec![Box::<Packet>::new(Packet::Component(*x))]))
+        }
+    }
 }
 
 fn main() {
@@ -122,15 +156,8 @@ fn main() {
             pair_idx += 1;
 
             if packets_in_order(&pair[0], &pair[1]) {
-                println!("Ordered!");
                 proper_pairs.push(pair_idx);
             } else {
-                println!("Unordered!");
-            }
-
-            // TODO: Remove once comparison is complete
-            if pair_idx == 1 {
-                break;
             }
         } else {
             let tokens = lex_string(line_for_parsing);
@@ -144,12 +171,11 @@ fn main() {
         }
     }
 
-    // TODO: Uncomment when comparison is complete
-    // pair_idx += 1;
+    pair_idx += 1;
 
-    // if packets_in_order(&pair[0], &pair[1]) {
-    //     proper_pairs.push(pair_idx);
-    // }
+    if packets_in_order(&pair[0], &pair[1]) {
+        proper_pairs.push(pair_idx);
+    }
 
-    println!("Total of ordered pair indicies: {}", proper_pairs.iter().sum::<u32>());
+    println!("Sum ordered pair indicies: {}", proper_pairs.iter().sum::<u32>());
 }
