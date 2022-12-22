@@ -1,0 +1,4 @@
+# Ada intermediates/outputs
+main
+*.ali
+*.o
