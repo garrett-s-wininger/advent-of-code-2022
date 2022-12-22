@@ -1,4 +1,5 @@
 use std::cmp;
+use std::cmp::Ordering;
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
@@ -28,7 +29,8 @@ fn lex_string(line: String) -> Vec<SignalToken> {
             if numeric_token_start != -1 {
                 tokens.push(
                     SignalToken::Integer(
-                        line[numeric_token_start as usize..index].parse::<i32>().unwrap()
+                        line[numeric_token_start as usize..index]
+                            .parse::<i32>().unwrap()
                     ));
                 numeric_token_start = -1;
             }
@@ -68,7 +70,9 @@ fn parse_tokens(tokens: &[SignalToken]) -> Packet {
 
                             if list_stack.is_empty() {
                                 result.push(
-                                    Box::<Packet>::new(parse_tokens(&tokens[idx + 1..i]))
+                                    Box::<Packet>::new(
+                                        parse_tokens(&tokens[idx + 1..i])
+                                    )
                                 );
 
                                 idx += i - idx + 1;
@@ -86,50 +90,51 @@ fn parse_tokens(tokens: &[SignalToken]) -> Packet {
     Packet::ComponentList(result)
 }
 
-fn components_match(first: &Packet, second: &Packet) -> bool {
-    match (first, second) {
-        (Packet::Component(x), Packet::Component(y)) => x == y,
-        _ => false
-    }
-}
-
-fn packets_in_order(first: &Packet, second: &Packet) -> bool {
+// FIXME: Missing some correct matches, too low
+fn compare_packets(first: &Packet, second: &Packet) -> cmp::Ordering {
     match (first, second) {
         (Packet::ComponentList(x), Packet::ComponentList(y)) => {
             let x_len = x.len();
             let y_len = y.len();
-            let smallest_len = cmp::min(x_len, y_len);
             let mut idx = 0;
 
-            while idx < smallest_len {
+            while idx < cmp::min(x_len, y_len) {
                 let x_value = &x[idx];
                 let y_value = &y[idx];
 
-                if !packets_in_order(x_value, y_value) {
-                    return false;
-                } else {
-                    if !components_match(x_value, y_value) {
-                        return true;
-                    }
+                match compare_packets(x_value, y_value) {
+                    Ordering::Less => return Ordering::Less,
+                    Ordering::Equal => idx += 1,
+                    Ordering::Greater => return Ordering::Greater,
                 }
-
-                idx += 1;
             }
 
-            if (x_len != y_len) && idx == y_len {
-                return false;
+            if x_len == y_len {
+                return Ordering::Equal;
+            } else if x_len < y_len {
+                return Ordering::Less;
+            } else {
+                return Ordering::Greater;
             }
-
-            true
         },
         (Packet::Component(x), Packet::Component(y)) => {
-            x <= y
+            x.cmp(y)
         },
         (Packet::Component(x), Packet::ComponentList(_)) => {
-            packets_in_order(&Packet::ComponentList(vec![Box::<Packet>::new(Packet::Component(*x))]), second)
+            compare_packets(
+                &Packet::ComponentList(
+                    vec![Box::<Packet>::new(Packet::Component(*x))]
+                ),
+                second
+            )
         },
         (Packet::ComponentList(_), Packet::Component(x)) => {
-            packets_in_order(first, &Packet::ComponentList(vec![Box::<Packet>::new(Packet::Component(*x))]))
+            compare_packets(
+                first,
+                &Packet::ComponentList(
+                    vec![Box::<Packet>::new(Packet::Component(*x))]
+                )
+            )
         }
     }
 }
@@ -155,9 +160,8 @@ fn main() {
         if (index + 1) % 3 == 0 {
             pair_idx += 1;
 
-            if packets_in_order(&pair[0], &pair[1]) {
+            if compare_packets(&pair[0], &pair[1]) == Ordering::Less {
                 proper_pairs.push(pair_idx);
-            } else {
             }
         } else {
             let tokens = lex_string(line_for_parsing);
@@ -173,7 +177,7 @@ fn main() {
 
     pair_idx += 1;
 
-    if packets_in_order(&pair[0], &pair[1]) {
+    if compare_packets(&pair[0], &pair[1]) == Ordering::Less {
         proper_pairs.push(pair_idx);
     }
 
