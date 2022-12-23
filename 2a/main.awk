@@ -1,7 +1,7 @@
 #!/usr/bin/awk -f
 
 BEGIN {
-    sum=0;
+    sum = 0;
 }
 
 $1 == "A" && $2 == "X" {
