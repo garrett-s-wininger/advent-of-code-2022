@@ -6,7 +6,7 @@ ranges present in a provided input file.
 
 The solution can be run with the following:
 
-    TBD
+    ./main.m <filepath>
 
 Octave was the chosen language for this portion so you'll need a compatible 
 runtime environment if you want to run the script.
