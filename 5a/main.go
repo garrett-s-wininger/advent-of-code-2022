@@ -64,19 +64,19 @@ func main() {
 			destinationIndex -= 1
 
 			transfer := stacks[sourceIndex][0:amount]
-			new_capacity := len(transfer) + len(stacks[destinationIndex])
-			new_stack := make([]rune, new_capacity)
+			newCapacity := len(transfer) + len(stacks[destinationIndex])
+			newStack := make([]rune, newCapacity)
 
-			for i := 0; i < new_capacity; i++ {
+			for i := 0; i < newCapacity; i++ {
 				if i < len(transfer) {
-					new_stack[i] = transfer[i]
+					newStack[i] = transfer[i]
 				} else {
-					new_stack[i] = stacks[destinationIndex][i-len(transfer)]
+					newStack[i] = stacks[destinationIndex][i-len(transfer)]
 				}
 			}
 
 			stacks[sourceIndex] = stacks[sourceIndex][amount:]
-			stacks[destinationIndex] = new_stack
+			stacks[destinationIndex] = newStack
 		}
 	}
 
