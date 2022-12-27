@@ -43,40 +43,40 @@ func main() {
 		if stage == StackPopulation {
 			for pos, char := range line {
 				if char >= 'A' && char <= 'Z' {
-					stack_index := (pos - 1) / 4
+					stackIndex := (pos - 1) / 4
 
-					if stack_index >= len(stacks) {
-						for i := len(stacks) - 1; i < stack_index; i++ {
+					if stackIndex >= len(stacks) {
+						for i := len(stacks) - 1; i < stackIndex; i++ {
 							stacks = append(stacks, []rune{})
 						}
 					}
 
-					stacks[stack_index] = append(stacks[stack_index], char)
+					stacks[stackIndex] = append(stacks[stackIndex], char)
 				}
 			}
 		} else if stage == StackMovement {
 			command := strings.Split(line, " ")
 			amount, _ := strconv.Atoi(command[1])
-			source_index, _ := strconv.Atoi(command[3])
-			destination_index, _ := strconv.Atoi(command[5])
+			sourceIndex, _ := strconv.Atoi(command[3])
+			destinationIndex, _ := strconv.Atoi(command[5])
 
-			source_index -= 1
-			destination_index -= 1
+			sourceIndex -= 1
+			destinationIndex -= 1
 
-			transfer := stacks[source_index][0:amount]
-			new_capacity := len(transfer) + len(stacks[destination_index])
+			transfer := stacks[sourceIndex][0:amount]
+			new_capacity := len(transfer) + len(stacks[destinationIndex])
 			new_stack := make([]rune, new_capacity)
 
 			for i := 0; i < new_capacity; i++ {
 				if i < len(transfer) {
 					new_stack[i] = transfer[i]
 				} else {
-					new_stack[i] = stacks[destination_index][i-len(transfer)]
+					new_stack[i] = stacks[destinationIndex][i-len(transfer)]
 				}
 			}
 
-			stacks[source_index] = stacks[source_index][amount:]
-			stacks[destination_index] = new_stack
+			stacks[sourceIndex] = stacks[sourceIndex][amount:]
+			stacks[destinationIndex] = new_stack
 		}
 	}
 
